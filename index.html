@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --danger: #d93025;
+            --success: #1e8e3e;
+        }
+
+        body {
+            background: #f0f2f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .stat-card {
+            border-radius: 12px;
+            color: white;
+            padding: 18px;
+            text-align: center;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+        }
+
+        .bg-orange {
+            background-color: #ff9800 !important;
+        }
+
+        .bg-blue-dark {
+            background-color: #0d47a1 !important;
+        }
+
+        .card-custom {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Animated Credit Text */
+        .credit-text {
+            text-align: right;
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            padding-right: 15px;
+            animation: colorChange 4s infinite;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        @keyframes colorChange {
+            0% {
+                color: #ff0000;
+                filter: drop-shadow(0 0 5px #ff0000);
+            }
+
+            25% {
+                color: #00ff00;
+                filter: drop-shadow(0 0 5px #00ff00);
+            }
+
+            50% {
+                color: #0000ff;
+                filter: drop-shadow(0 0 5px #0000ff);
+            }
+
+            75% {
+                color: #ff00ff;
+                filter: drop-shadow(0 0 5px #ff00ff);
+            }
+
+            100% {
+                color: #ff0000;
+                filter: drop-shadow(0 0 5px #ff0000);
+            }
+        }
+
+        /* Arriving Today - animated red names */
+        @keyframes redPulse {
+            0% {
+                color: #d32f2f;
+                text-shadow: 0 0 6px rgba(211, 47, 47, 0.9);
+                opacity: 1;
+            }
+
+            50% {
+                color: #ff1744;
+                text-shadow: 0 0 18px rgba(255, 23, 68, 1);
+                opacity: 0.7;
+            }
+
+            100% {
+                color: #d32f2f;
+                text-shadow: 0 0 6px rgba(211, 47, 47, 0.9);
+                opacity: 1;
+            }
+        }
+
+        .arriving-name {
+            display: inline-block;
+            font-weight: bold;
+            font-size: 0.95rem;
+            animation: redPulse 1.2s ease-in-out infinite;
+            margin-right: 18px;
+        }
+
+        .admin-only,
+        .mess-in-only,
+        .mess-out-only {
+            display: none;
+        }
+
+        .rp-only {
+            display: none;
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+        }
+
+        .print-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .print-header img {
+            max-width: 80px;
+            margin-bottom: 15px;
+        }
+
+        .print-header h2 {
+            font-size: 1.5rem;
+            margin: 10px 0;
+        }
+
+        .print-header h3 {
+            font-size: 1.1rem;
+            margin: 5px 0;
+            color: #333;
+        }
+
+        .print-header .divider {
+            border-top: 2px solid #1a73e8;
+            margin: 15px 0;
+        }
+
+        .login-logo {
+            display: block;
+            margin: 0 auto 15px;
+            max-width: 100px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loginPage" class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-4 card p-4 shadow-lg text-center border-0">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/d/d1/SLSC_LOGO.png" alt="SLSC Logo"
+                    class="login-logo">
+                <h3 class="mb-4 text-primary font-weight-bold">UNIT MANAGEMENT</h3>
+                <input type="text" id="user" class="form-control mb-3" placeholder="Username">
+                <input type="password" id="pass" class="form-control mb-4" placeholder="Password">
+                <button onclick="login()" class="btn btn-primary btn-block font-weight-bold py-2">LOGIN</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mainApp" class="container-fluid py-3" style="display:none;">
+        <div class="row no-print mb-2 align-items-center">
+            <div class="col-auto d-flex align-items-center">
+                <button class="btn btn-sm btn-outline-secondary mr-1" onclick="refreshDashboard('All')">All</button>
+                <button class="btn btn-sm btn-outline-secondary mr-1" onclick="refreshDashboard('Hq Squadron')">Hq
+                    Squadron</button>
+                <button class="btn btn-sm btn-outline-secondary mr-1" onclick="refreshDashboard('Com Squadron')">Com
+                    Squadron</button>
+                <span id="selectedSquad" class="ml-2 font-weight-bold">All</span>
+            </div>
+            <div class="col-md-2">
+                <div class="stat-card bg-blue-dark" style="padding: 10px; margin-bottom: 6px;">
+                    <h6 style="margin: 0; font-size: 12px;">Inside Camp</h6>
+                    <h2 id="c-inside" style="margin: 4px 0;">0</h2>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="stat-card bg-orange" style="padding: 10px; margin-bottom: 6px;">
+                    <h6 style="margin: 0; font-size: 12px;">රාජකාරි</h6>
+                    <h2 id="c-duty" style="margin: 4px 0;">0</h2>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="stat-card bg-danger" style="padding: 10px; margin-bottom: 6px;">
+                    <h6 style="margin: 0; font-size: 12px;">නිවාඩු/කෙටි නිවාඩු</h6>
+                    <h2 id="c-leave" style="margin: 4px 0;">0</h2>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="stat-card bg-success" style="padding: 10px; margin-bottom: 6px;">
+                    <h6 style="margin: 0; font-size: 12px;">Living In</h6>
+                    <h2 id="c-in" style="margin: 4px 0;">0</h2>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="stat-card bg-info" style="padding: 10px; margin-bottom: 6px;">
+                    <h6 style="margin: 0; font-size: 12px;">5 SLSC STR</h6>
+                    <h2 id="c-total" style="margin: 4px 0;">0</h2><small id="c-official"
+                        style="font-size:10px; opacity:0.85;">Official: 411</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Arriving Today Alert -->
+        <div id="arrivingTodayRow" class="row no-print" style="display:none;">
+            <div class="col-12">
+                <div
+                    style="background:#fff0f0; border:2px solid #d32f2f; border-radius:10px; padding:10px 18px; margin-bottom:8px; display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
+                    <span style="font-weight:bold; color:#b71c1c; margin-right:10px; font-size:0.95rem;">🔔 අද පැමිණීමට නියමිතයි / Scheduled to Arrive Today:</span>
+                    <span id="arrivingTodayNames"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row no-print">
+            <div class="col-12">
+                <div class="credit-text">✨ The system was set up by Cpl Rajapaksha RASS ✨</div>
+            </div>
+        </div>
+
+        <ul class="nav nav-pills mb-4 no-print border p-2 bg-white rounded shadow-sm">
+            <li class="nav-item admin-only"><a class="nav-link active" data-toggle="pill" href="#entry">Entry</a></li>
+            <li class="nav-item admin-only"><a class="nav-link" data-toggle="pill" href="#summary"
+                    onclick="loadSummary()">Summary</a></li>
+            <li class="nav-item admin-only mess-in-only"><a class="nav-link" data-toggle="pill" href="#meals"
+                    onclick="loadLivingIn()">Meals (In)</a></li>
+            <li class="nav-item admin-only mess-out-only"><a class="nav-link" data-toggle="pill" href="#mealsOut"
+                    onclick="loadLivingOut()">Meals (Out)</a></li>
+            <li class="nav-item admin-only"><a class="nav-link" data-toggle="pill" href="#menu"
+                    onclick="loadMenu()">Menu</a></li>
+            <li class="nav-item ml-auto"><button onclick="location.reload()"
+                    class="btn btn-outline-danger btn-sm font-weight-bold">Logout</button></li>
+        </ul>
+
+        <div class="tab-content card-custom rp-hide-tabs">
+            <div class="tab-pane fade show active" id="entry">
+                <form onsubmit="handleFormSubmit(this); return false;">
+                    <div class="form-row">
+                        <div class="col-md-3 mb-3"><label class="font-weight-bold">Reg No</label>
+                            <div class="input-group"><input type="text" name="regNo" id="regNo" class="form-control"
+                                    required>
+                                <div class="input-group-append"><button type="button" class="btn btn-dark"
+                                        onclick="searchData()">Search</button></div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 mb-3"><label class="font-weight-bold">Rank</label><input type="text"
+                                id="rank" name="rank" class="form-control"></div>
+                        <div class="col-md-3 mb-3"><label class="font-weight-bold">Name</label><input type="text"
+                                id="name" name="name" class="form-control" required></div>
+                        <div class="col-md-2 mb-3"><label class="font-weight-bold">Unit</label><input type="text"
+                                id="unit" name="unit" class="form-control"></div>
+                        <div class="col-md-2"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="col-md-3 mb-3"><label class="font-weight-bold">Squadron</label><select
+                                name="squadron" id="squadron" class="form-control">
+                                <option value="Hq Squadron">Hq Squadron</option>
+                                <option value="Com Squadron">Com Squadron</option>
+                            </select></div>
+                        <div class="col-md-2 mb-3"><label class="font-weight-bold">Living</label><select name="living"
+                                id="living" class="form-control">
+                                <option value="In">In</option>
+                                <option value="Out">Out</option>
+                            </select></div>
+                        <div class="col-md-3 mb-3"><label class="font-weight-bold">Status</label><select name="duty"
+                                id="mainDuty" class="form-control">
+                                <option value="Inside the Camp">Inside the Camp</option>
+                                <option value="රාජකාරි">රාජකාරි</option>
+                                <option value="නිවාඩු">නිවාඩු</option>
+                                <option value="කෙටි නිවාඩු">කෙටි නිවාඩු</option>
+                                <option value="පාඨමාලා">පාඨමාලා</option>
+                                <option value="වෛද්‍ය නිවාඩු">වෛද්‍ය නිවාඩු</option>
+                                <option value="පිටත යාකිරිම්">පිටත යාකිරිම්</option>
+                                <option value="අරෙසෙ">අරෙසෙ</option>
+                                <option value="අසනීප වර්ග කිරීම්">අසනීප වර්ග කිරීම්</option>
+                                <option value="වෙනත්">වෙනත්</option>
+                            </select></div>
+                        <div class="col-md-3 mb-3"><label class="font-weight-bold">Extra Details</label><input
+                                type="text" id="extraDuty" class="form-control" placeholder="Duty/Sick Details"></div>
+                        <div class="col-md-1"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="col-md-2 mb-3"><label class="font-weight-bold">From</label><input type="date"
+                                id="fromDate" class="form-control"></div>
+                        <div class="col-md-2 mb-3"><label class="font-weight-bold">To</label><input type="date"
+                                id="toDate" class="form-control"></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary px-5 font-weight-bold shadow-sm">SAVE / UPDATE
+                        RECORD</button>
+                </form>
+            </div>
+
+            <div class="tab-pane fade" id="summary">
+                <div id="printArea">
+                    <div class="print-header">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/d/d1/SLSC_LOGO.png" alt="SLSC Logo">
+                        <h2 class="font-weight-bold">5 SLSC</h2>
+                        <h3>Daily Parade Details</h3>
+                        <div class="divider"></div>
+                        <h5 id="sumDate">--</h5>
+                    </div>
+                    <!-- combined summary -->
+                    <div id="statusSummaryTable"></div>
+                    <div id="nameListContent"></div>
+                    <!-- squadron-specific summaries -->
+                    <div class="mt-4">
+                        <h4>Hq Squadron</h4>
+                        <div id="statusSummaryTableHq"></div>
+                        <div id="nameListContentHq"></div>
+                    </div>
+                    <div class="mt-4">
+                        <h4>Com Squadron</h4>
+                        <div id="statusSummaryTableCom"></div>
+                        <div id="nameListContentCom"></div>
+                    </div>
+                </div>
+                <div class="no-print mt-4">
+                    <div class="d-flex gap-2">
+                        <button onclick="window.print()" class="btn btn-dark btn-sm font-weight-bold flex-grow-1"><i
+                                class="fas fa-print me-2"></i>PRINT REPORT</button>
+                        <button onclick="savePDF()" class="btn btn-warning btn-sm font-weight-bold flex-grow-1"><i
+                                class="fas fa-file-pdf me-2"></i>SAVE AS PDF</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="meals">
+                <input type="text" class="form-control mb-3" placeholder="නම් හෝ අංක මගින් සොයන්න (Living In)..."
+                    onkeyup="filterT(this, 'mealList')">
+                <table class="table table-bordered table-hover">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Rank & Name</th>
+                            <th class="text-center">B</th>
+                            <th class="text-center">L</th>
+                            <th class="text-center">D</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mealList"></tbody>
+                </table>
+                <button onclick="submitM('IN')" class="btn btn-success btn-block mt-3 font-weight-bold">SAVE MEALS
+                    (IN)</button>
+            </div>
+
+            <div class="tab-pane fade" id="mealsOut">
+                <input type="text" class="form-control mb-3 border-danger"
+                    placeholder="නම් හෝ අංක මගින් සොයන්න (Living Out)..." onkeyup="filterT(this, 'mealListOut')">
+                <table class="table table-bordered table-hover">
+                    <thead>
+                        <tr class="bg-danger text-white">
+                            <th>Rank & Name</th>
+                            <th class="text-center">B</th>
+                            <th class="text-center">L</th>
+                            <th class="text-center">D</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mealListOut"></tbody>
+                </table>
+                <button onclick="submitM('OUT')" class="btn btn-danger btn-block mt-3 font-weight-bold">SAVE MEALS
+                    (OUT)</button>
+            </div>
+
+            <div class="tab-pane fade" id="menu">
+                <div id="menuView" class="row text-center mb-4"></div>
+                <div class="admin-only border-top pt-4">
+                    <h5 class="mb-3">Update Daily Menu</h5>
+                    <textarea id="mb" class="form-control mb-2" placeholder="Breakfast Menu"></textarea>
+                    <textarea id="ml" class="form-control mb-2" placeholder="Lunch Menu"></textarea>
+                    <textarea id="md" class="form-control mb-2" placeholder="Dinner Menu"></textarea>
+                    <button onclick="saveMenu()" class="btn btn-info btn-block font-weight-bold">UPDATE MENU</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUserRole = '';
+        
+        function login() {
+            google.script.run.withSuccessHandler(res => {
+                if (res.success) {
+                    currentUserRole = res.role;
+                    $('#loginPage').hide(); $('#mainApp').show();
+                    if (res.role === 'admin') { 
+                        $('.admin-only').show(); 
+                        loadSummary(); 
+                        loadPersonnel(); 
+                    }
+                    else if (res.role === 'rp_admin') {
+                        // RP admin only sees dashboard, no tabs
+                        $('.nav-pills').hide();
+                        $('.rp-hide-tabs').hide();
+                        loadSummary();
+                    }
+                    else if (res.role === 'out_user') { $('.mess-out-only').show(); $('.nav-link[href="#mealsOut"]').tab('show'); loadLivingOut(); }
+                    else { $('.mess-in-only').show(); $('.nav-link[href="#meals"]').tab('show'); loadLivingIn(); }
+                } else alert("Login Failed! Please check credentials.");
+            }).checkLogin($('#user').val(), $('#pass').val());
+        }
+
+        function searchData() {
+            google.script.run.withSuccessHandler(res => {
+                if (res) {
+                    $('#rank').val(res.rank); $('#name').val(res.name); $('#unit').val(res.unit); $('#squadron').val(res.squadron); $('#living').val(res.living);
+                    if (res.duty.includes('(')) { let p = res.duty.split('('); $('#mainDuty').val(p[0].trim()); $('#extraDuty').val(p[1].replace(')', '')); } else $('#mainDuty').val(res.duty);
+                    $('#fromDate').val(res.fromDate); $('#toDate').val(res.toDate);
+                } else alert("Record not found!");
+            }).searchByRegNo($('#regNo').val());
+        }
+
+        function handleFormSubmit(f) {
+            let d = $('#mainDuty').val(); 
+            if ($('#extraDuty').val()) d += " (" + $('#extraDuty').val() + ")";
+            
+            const formData = { 
+                regNo: $('#regNo').val(), 
+                rank: $('#rank').val(), 
+                name: $('#name').val(), 
+                unit: $('#unit').val(), 
+                squadron: $('#squadron').val(), 
+                living: $('#living').val(), 
+                duty: d, 
+                fromDate: $('#fromDate').val() || '', 
+                toDate: $('#toDate').val() || ''
+            };
+            
+            google.script.run
+                .withSuccessHandler(function(r) { 
+                    alert(r); 
+                    f.reset(); 
+                    loadSummary(); 
+                })
+                .withFailureHandler(function(error) {
+                    alert('Error saving: ' + error.message);
+                })
+                .processForm(formData);
+            
+            return false;
+        }
+
+        function markAsArrived(regNo) {
+            if (!confirm('Mark this person as arrived and change status to "Inside the Camp"?')) return;
+            
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    if (res.success) {
+                        alert(res.message);
+                        loadSummary();
+                    } else {
+                        alert('Error: ' + res.message);
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    alert('Error updating status: ' + error.message);
+                })
+                .markPersonAsArrived(regNo);
+        }
+
+        function loadSummary(squad) {
+            // fetch data and display overall plus squadron breakdown
+            google.script.run.withSuccessHandler(res => {
+                // update date always
+                $('#sumDate').text("Date: " + res.date);
+                // choose counts based on filter
+                let counts = res.counts;
+                if (squad && squad !== 'All' && res.squadronCounts && res.squadronCounts[squad]) {
+                    counts = res.squadronCounts[squad];
+                }
+                $('#c-inside').text(counts.insideCamp);
+                $('#c-duty').text(counts.onDuty);
+                $('#c-leave').text(counts.onLeave);
+                $('#c-in').text(counts.livingIn);
+                $('#c-total').text(counts.total);
+                // official strength
+                if (res.officialStr) $('#c-official').text('Official: ' + res.officialStr);
+                // arriving today
+                if (res.arrivingToday && res.arrivingToday.length > 0) {
+                    let names = res.arrivingToday.map(p => {
+                        const arrivedBtn = (currentUserRole === 'rp_admin') 
+                            ? `<button onclick="markAsArrived('${p.regNo}')" class="btn btn-sm btn-success" style="padding:2px 8px; font-size:0.75rem; margin-right:6px;">✓ Arrived</button>`
+                            : '';
+                        return `<span class='arriving-name'>
+                            ${arrivedBtn}
+                            🔴 ${p.rank} ${p.name} &nbsp;<small style='font-weight:normal;opacity:0.8;'>(${p.regNo})</small>
+                        </span>`;
+                    }).join('');
+                    $('#arrivingTodayNames').html(names);
+                    $('#arrivingTodayRow').show();
+                } else {
+                    $('#arrivingTodayRow').hide();
+                }
+                // combined tables always shown
+                $('#statusSummaryTable').html(res.statusTable);
+                $('#nameListContent').html(res.nameListHtml);
+                // squadron-specific
+                if (res.squadronSummaries) {
+                    $('#statusSummaryTableHq').html(res.squadronSummaries['Hq Squadron'].tableHtml);
+                    $('#nameListContentHq').html(res.squadronSummaries['Hq Squadron'].namesHtml);
+                    $('#statusSummaryTableCom').html(res.squadronSummaries['Com Squadron'].tableHtml);
+                    $('#nameListContentCom').html(res.squadronSummaries['Com Squadron'].namesHtml);
+                }
+            }).getSummaryData();
+        }
+
+        function refreshDashboard(squad) {
+            // update label
+            $('#selectedSquad').text(squad === 'All' ? 'All Squadrons' : squad);
+            // update stats
+            loadSummary(squad);
+        }
+
+        // load personnel directory
+        function loadPersonnel() {
+            google.script.run.withSuccessHandler(list => {
+                window._personnelAll = list;
+                renderPersonnel(list);
+            }).getPersonnelList();
+        }
+        function renderPersonnel(list) {
+            let h = '';
+            list.forEach(p => {
+                const shortDuty = p.duty.includes('(') ? p.duty.split('(')[0].trim() : p.duty;
+                const isLeave = p.duty.includes('\u0db1\u0dd2\u0dc0\u0dcf\u0da9\u0dd4');
+                const rowStyle = isLeave ? "background:#fff3e0;" : "";
+                h += `<tr style="${rowStyle}"><td><b>${p.regNo}</b></td><td>${p.rank}</td><td>${p.name}</td><td>${p.squadron}</td><td>${shortDuty}</td></tr>`;
+            });
+            $('#personnelTableBody').html(h || '<tr><td colspan="5" class="text-center text-muted">No records found</td></tr>');
+        }
+        function filterPersonnel() {
+            const q = $('#personnelSearch').val().toLowerCase();
+            if (!window._personnelAll) return;
+            const filtered = q ? window._personnelAll.filter(p =>
+                p.regNo.toString().toLowerCase().includes(q) ||
+                p.rank.toLowerCase().includes(q) ||
+                p.name.toLowerCase().includes(q)
+            ) : window._personnelAll;
+            renderPersonnel(filtered);
+        }
+
+        // default invocation
+        loadSummary('All');
+        // ensure cards update when squad button clicked elsewhere too
+        function loadLivingIn() { google.script.run.withSuccessHandler(d => { lIn = d; let h = ''; d.forEach((p, i) => { h += `<tr><td>${p.rank} ${p.name} (${p.regNo})</td><td class='text-center'><input type='checkbox' id='bi_${i}'></td><td class='text-center'><input type='checkbox' id='li_${i}'></td><td class='text-center'><input type='checkbox' id='di_${i}'></td></tr>`; }); $('#mealList').html(h); }).getLivingInList(); }
+        function loadLivingOut() { google.script.run.withSuccessHandler(d => { lOut = d; let h = ''; d.forEach((p, i) => { h += `<tr><td>${p.rank} ${p.name} (${p.regNo})</td><td class='text-center'><input type='checkbox' id='bo_${i}'></td><td class='text-center'><input type='checkbox' id='lo_${i}'></td><td class='text-center'><input type='checkbox' id='do_${i}'></td></tr>`; }); $('#mealListOut').html(h); }).getLivingOutList(); }
+        function filterT(el, id) { let v = $(el).val().toLowerCase(); $('#' + id + ' tr').each(function () { $(this).toggle($(this).text().toLowerCase().indexOf(v) > -1); }); }
+
+        function submitM(type) {
+            let list = (type === 'IN') ? lIn : lOut; let pre = (type === 'IN') ? 'i' : 'o';
+            let data = list.map((p, i) => ({ regNo: p.regNo, rank: p.rank, name: p.name, breakfast: $(`#b${pre}_${i}`).is(':checked') ? "YES" : "NO", lunch: $(`#l${pre}_${i}`).is(':checked') ? "YES" : "NO", dinner: $(`#d${pre}_${i}`).is(':checked') ? "YES" : "NO" }));
+            google.script.run.withSuccessHandler(r => alert(r)).saveMeals(data, type);
+        }
+
+        function loadMenu() { google.script.run.withSuccessHandler(m => { $('#menuView').html(`<div class='col-4'><div class='card p-3'><b>Breakfast</b><br>${m.b}</div></div><div class='col-4'><div class='card p-3'><b>Lunch</b><br>${m.l}</div></div><div class='col-4'><div class='card p-3'><b>Dinner</b><br>${m.d}</div></div>`); }).getDailyMenu(); }
+        function saveMenu() { google.script.run.withSuccessHandler(r => { alert(r); loadMenu(); }).updateDailyMenu({ b: $('#mb').val(), l: $('#ml').val(), d: $('#md').val() }); }
+
+        function savePDF() {
+            const printArea = document.getElementById('printArea');
+            if (!printArea) { alert('Nothing to save'); return; }
+
+            // Clone the print area so we can adjust styles without changing the page
+            const clone = printArea.cloneNode(true);
+
+            // Reduce header/logo size for PDF to save space
+            const headerImg = clone.querySelector('.print-header img');
+            if (headerImg) {
+                headerImg.style.maxWidth = '60px';
+                headerImg.style.display = 'block';
+                headerImg.style.margin = '0 auto 8px';
+                // allow cross-origin loading
+                try { headerImg.crossOrigin = 'anonymous'; } catch (e) { }
+            }
+
+            // Apply compact print styles inline on the clone and force header top alignment
+            const styleEl = document.createElement('style');
+            styleEl.innerHTML = `
+            html, body { height: auto; margin: 0; padding: 0; }
+            body{font-family: Arial, Helvetica, sans-serif; color:#222}
+            .print-header{position:relative; margin:0; padding-top:0; text-align:center}
+            .print-header img{display:block; margin:0 auto 6px}
+            .print-header h2{font-size:16px;margin:4px 0}
+            .print-header h3{font-size:12px;margin:0 0 6px}
+            .divider{margin:6px auto; width:80%;}
+            #statusSummaryTable, #statusSummaryTableHq, #statusSummaryTableCom { font-size:11px }
+            #nameListContent div{font-size:11px}
+            .card-custom{box-shadow:none;padding:0}
+            .content-wrapper{display:block; margin-top:6mm}
+        `;
+            clone.insertBefore(styleEl, clone.firstChild);
+
+            // Create an offscreen container so html2canvas can render the clone
+            const container = document.createElement('div');
+            container.style.position = 'absolute';
+            container.style.left = '-10000px';
+            container.style.top = '0';
+            container.style.overflow = 'visible';
+            container.appendChild(clone);
+            document.body.appendChild(container);
+
+            // Ensure images allow cross-origin loading for html2canvas
+            const imgs = Array.from(container.querySelectorAll('img'));
+            imgs.forEach(img => { try { img.crossOrigin = 'anonymous'; } catch (e) { } });
+
+            // Wait for all images to load (or timeout) before generating PDF
+            const waitForImages = () => new Promise(resolve => {
+                if (imgs.length === 0) return resolve();
+                let loaded = 0; const timeout = setTimeout(() => resolve(), 3000);
+                imgs.forEach(img => {
+                    if (img.complete) { if (++loaded === imgs.length) { clearTimeout(timeout); resolve(); } }
+                    else img.onload = img.onerror = () => { if (++loaded === imgs.length) { clearTimeout(timeout); resolve(); } };
+                });
+            });
+
+            const today = new Date().toISOString().split('T')[0];
+            const filename = `5_SLSC_Daily_Parade_${today}.pdf`;
+            const opt = {
+                margin: [8, 8, 8, 8],
+                filename: filename,
+                image: { type: 'jpeg', quality: 0.78 },
+                html2canvas: { scale: 2, useCORS: true, allowTaint: false },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            waitForImages().then(() => {
+                // Use the clone itself as the source for html2pdf
+                html2pdf().set(opt).from(clone).save().then(() => {
+                    document.body.removeChild(container);
+                }).catch(err => {
+                    document.body.removeChild(container);
+                    alert('PDF generation failed: ' + err);
+                });
+            });
+        }
+    </script>
+</body>
+
+</html>
